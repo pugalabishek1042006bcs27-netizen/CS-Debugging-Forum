@@ -1,0 +1,108 @@
+<div style="padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 800px; margin: auto; background-color: #f8f9fa; min-height: 100vh;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h1 style="color: #333; text-align: center; border-bottom: 2px solid #007bff; padding-bottom: 10px; margin: 0;">CS Debugging Forum</h1>
+    
+    <!-- Notification Bell -->
+    <div style="position: relative;">
+      <button (click)="toggleNotifications()" style="background: #007bff; color: white; border: none; padding: 10px; border-radius: 50%; cursor: pointer; position: relative;">
+        🔔
+        <span *ngIf="unreadNotificationsCount > 0" style="position: absolute; top: -5px; right: -5px; background: #dc3545; color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.7em; font-weight: bold;">{{ unreadNotificationsCount }}</span>
+      </button>
+      
+      <!-- Notification Dropdown -->
+      <div *ngIf="showNotifications" style="position: absolute; top: 50px; right: 0; background: white; border: 1px solid #ddd; border-radius: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 350px; max-height: 400px; overflow-y: auto; z-index: 1000;">
+        <div style="padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+          <h4 style="margin: 0; color: #333;">Notifications</h4>
+          <div>
+            <button *ngIf="unreadNotificationsCount > 0" (click)="markAllNotificationsAsRead()" style="background: #28a745; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; font-size: 0.8em; margin-right: 5px;">Mark All Read</button>
+            <button (click)="clearAllNotifications()" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; font-size: 0.8em;">Clear All</button>
+          </div>
+        </div>
+        
+        <div *ngIf="notifications.length === 0" style="padding: 20px; text-align: center; color: #999;">
+          No notifications yet
+        </div>
+        
+        <div *ngFor="let notification of notifications" 
+             [style.background]="!notification.isRead ? '#f0f8ff' : 'white'"
+             style="padding: 15px; border-bottom: 1px solid #f0f0f0; cursor: pointer;"
+             (click)="markNotificationAsRead(notification.id)">
+          <div style="font-size: 0.9em; color: #555; margin-bottom: 5px;">{{ notification.message }}</div>
+          <div style="font-size: 0.8em; color: #999;">{{ notification.timestamp | date:'short' }}</div>
+          <div *ngIf="!notification.isRead" style="width: 8px; height: 8px; background: #007bff; border-radius: 50%; display: inline-block; margin-left: 10px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search Bar -->
+  <div style="background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px;">
+    <input [(ngModel)]="searchTerm" placeholder="Search questions, tags, or code..." style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px;">
+  </div>
+
+  <!-- User Role Selection -->
+  <div style="background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; text-align: center;">
+    <label style="font-weight: bold; margin-right: 10px;">Your Role:</label>
+    <select [(ngModel)]="currentUserRole" style="padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+      <option value="Peer">Peer</option>
+      <option value="Senior">Senior</option>
+    </select>
+  </div>
+
+  <!-- Form to Post -->
+  <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 30px;">
+    <h3 style="margin-top: 0;">Post a New Bug</h3>
+    <input [(ngModel)]="newTitle" placeholder="Problem Title (e.g. Null Pointer in Java)" style="width: 97%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 5px;">
+    <select [(ngModel)]="newTag" style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 5px;">
+      <option *ngFor="let course of courseOptions" [value]="course">{{ course }}</option>
+    </select>
+    <textarea [(ngModel)]="newCode" placeholder="Paste your code snippet here..." style="width: 97%; height: 120px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-family: monospace;"></textarea>
+    <button (click)="addQuestion()" style="margin-top: 15px; padding: 12px 25px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">Post to Community</button>
+  </div>
+
+  <!-- Discussion List -->
+  <div *ngFor="let q of filteredQuestions" style="background: white; border-left: 5px solid #007bff; padding: 20px; border-radius: 0 10px 10px 0; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+    <h2 style="margin: 0; display: flex; justify-content: space-between; align-items: center;">
+      {{ q.title }}
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="background: #e7f1ff; color: #007bff; font-size: 0.5em; padding: 5px 10px; border-radius: 20px;">{{ q.tag }}</span>
+        <button (click)="upvoteQuestion(q.id)" style="background: #28a745; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">👍 {{ q.votes }}</button>
+      </div>
+    </h2>
+    <div style="background: #2d2d2d; color: #ccc; padding: 15px; border-radius: 5px; margin: 15px 0; overflow-x: auto;">
+      <pre style="margin: 0;"><code style="font-family: 'Courier New', Courier, monospace;">{{ q.codeSnippet }}</code></pre>
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: center; color: #777; font-size: 0.85em;">
+      <span>Reported by: <strong>{{ q.author }}</strong> <span style="background: {{ q.userRole === 'Senior' ? '#fff3cd' : '#d1ecf1' }}; color: {{ q.userRole === 'Senior' ? '#856404' : '#0c5460' }}; padding: 2px 6px; border-radius: 3px; font-size: 0.8em;">{{ q.userRole }}</span></span>
+      <button (click)="writeSolution(q.id)" style="background: transparent; color: #007bff; border: 1px solid #007bff; padding: 5px 10px; border-radius: 3px; cursor: pointer;">Write Solution</button>
+    </div>
+    
+    <!-- Solution Form -->
+    <div *ngIf="solvingQuestionId === q.id" style="background: #f0f7ff; padding: 15px; border-radius: 5px; margin-top: 15px;">
+      <h4>Write a Solution:</h4>
+      <textarea [(ngModel)]="newSolution" placeholder="Enter your solution..." style="width: 97%; height: 100px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-family: monospace;"></textarea>
+      <div style="display: flex; gap: 10px; margin-top: 10px;">
+        <button (click)="submitSolution()" style="padding: 8px 15px; background: #28a745; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;">Submit Solution</button>
+        <button (click)="cancelSolution()" style="padding: 8px 15px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer;">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Solutions Display -->
+    <div *ngIf="q.solutions && q.solutions.length > 0" style="background: #e8f5e9; padding: 15px; margin-top: 15px; border-radius: 5px; border-left: 4px solid #4caf50;">
+      <h4 style="margin-top: 0; color: #2e7d32;">✓ Solutions ({{ q.solutions.length }})</h4>
+      <div *ngFor="let sol of q.solutions" style="background: white; padding: 10px; margin-bottom: 10px; border-radius: 3px; border-left: 3px solid {{ sol.isAccepted ? '#ff9800' : '#81c784' }};">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+          <p style="margin: 0 0 8px 0; color: #555; flex: 1;">{{ sol.text }}</p>
+          <div style="display: flex; gap: 5px; align-items: center;">
+            <button (click)="upvoteSolution(q.id, sol.id)" style="background: #ffc107; color: #000; border: none; padding: 3px 8px; border-radius: 3px; cursor: pointer; font-size: 0.8em;">👍 {{ sol.votes }}</button>
+            <button *ngIf="!sol.isAccepted" (click)="acceptSolution(q.id, sol.id)" style="background: #ff9800; color: white; border: none; padding: 3px 8px; border-radius: 3px; cursor: pointer; font-size: 0.8em;">Accept</button>
+            <span *ngIf="sol.isAccepted" style="background: #ff9800; color: white; padding: 3px 8px; border-radius: 3px; font-size: 0.8em;">✓ Accepted</span>
+          </div>
+        </div>
+        <div style="font-size: 0.8em; color: #999;">
+          By <strong>{{ sol.author }}</strong> • {{ sol.timestamp | date:'short' }}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
